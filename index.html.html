@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家庭健康記錄</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F4F1EC;
+    --card: #FDFCFA;
+    --ink: #1A1714;
+    --ink2: #5C5650;
+    --ink3: #9C968E;
+    --accent: #C84B2F;
+    --accent2: #4B7FA8;
+    --border: #E2DDD6;
+    --success: #2E7D52;
+    --warn: #C84B2F;
+    --father: #4B7FA8;
+    --mother: #A0577A;
+    --radius: 14px;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Noto Sans TC', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  /* ---- header ---- */
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ink);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    padding: 6px 14px;
+    border-radius: 99px;
+    margin-bottom: 16px;
+  }
+  .logo-dot { width:7px; height:7px; border-radius:50%; background:#C84B2F; }
+  h1 {
+    font-size: clamp(22px, 5vw, 30px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .date-today {
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink3);
+  }
+
+  /* ---- person selector ---- */
+  .person-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .person-tab {
+    border: 2px solid var(--border);
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .person-tab::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 2px 2px 0 0;
+    transition: opacity 0.18s;
+    opacity: 0;
+  }
+  .person-tab.father::before { background: var(--father); }
+  .person-tab.mother::before { background: var(--mother); }
+  .person-tab.active { border-color: transparent; box-shadow: 0 0 0 2.5px currentColor; }
+  .person-tab.active.father { color: var(--father); box-shadow: 0 0 0 2.5px var(--father); }
+  .person-tab.active.mother { color: var(--mother); box-shadow: 0 0 0 2.5px var(--mother); }
+  .person-tab.active::before { opacity: 1; }
+  .person-icon { font-size: 28px; margin-bottom: 4px; }
+  .person-name { font-weight: 700; font-size: 17px; }
+  .person-sub { font-size: 12px; color: var(--ink3); margin-top: 2px; }
+
+  /* ---- card ---- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: 14px;
+  }
+
+  /* ---- bp row ---- */
+  .bp-row {
+    display: grid;
+    grid-template-columns: 1fr 20px 1fr;
+    gap: 0;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .bp-sep { text-align: center; font-size: 20px; color: var(--ink3); font-weight: 300; }
+
+  /* ---- field ---- */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .field-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .field input {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    width: 100%;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance: textfield;
+  }
+  .field input::-webkit-outer-spin-button,
+  .field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .field input:focus {
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(26,23,20,0.08);
+  }
+  .field input.warn-high { border-color: var(--warn); }
+  .field input.ok { border-color: var(--success); }
+  .field-unit {
+    font-size: 11px;
+    color: var(--ink3);
+    text-align: center;
+    font-family: var(--mono);
+  }
+
+  /* ---- single field ---- */
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* ---- status tag ---- */
+  .bp-status {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .bp-status.visible { opacity: 1; }
+  .bp-status.normal { background: #E6F4EE; color: #1F6B3A; }
+  .bp-status.elevated { background: #FEF3E7; color: #9A5A0A; }
+  .bp-status.high { background: #FDEAEA; color: #8B1F1F; }
+
+  /* ---- date ---- */
+  .date-field input {
+    font-family: var(--sans);
+    font-size: 16px;
+    text-align: left;
+  }
+
+  /* ---- note ---- */
+  textarea {
+    font-family: var(--sans);
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    width: 100%;
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+    line-height: 1.6;
+    transition: border-color 0.15s;
+  }
+  textarea:focus { border-color: var(--ink); }
+
+  /* ---- submit ---- */
+  .submit-btn {
+    width: 100%;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 18px;
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.12s;
+    letter-spacing: 0.02em;
+  }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn:hover { background: #333; }
+
+  /* ---- success overlay ---- */
+  .success-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 32px;
+  }
+  .success-overlay.show { display: flex; }
+  .success-icon { font-size: 64px; margin-bottom: 20px; }
+  .success-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+  .success-sub { font-size: 15px; color: var(--ink2); margin-bottom: 32px; line-height: 1.6; }
+  .success-data {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 24px;
+    width: 100%;
+    max-width: 320px;
+    text-align: left;
+    margin-bottom: 28px;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 2;
+    color: var(--ink2);
+  }
+  .success-data strong { color: var(--ink); font-weight: 500; }
+  .again-btn {
+    background: transparent;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    padding: 14px 32px;
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .again-btn:hover { background: var(--ink); color: #fff; }
+
+  /* ---- setup notice ---- */
+  .setup-notice {
+    background: #FFF8E7;
+    border: 1px solid #F5D97E;
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #7A5C00;
+    line-height: 1.7;
+  }
+  .setup-notice strong { font-weight: 600; }
+
+  /* history */
+  .history-section { margin-top: 28px; }
+  .history-title {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .clear-btn {
+    font-size: 11px;
+    color: var(--ink3);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 8px;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .history-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+  }
+  .h-person { font-size: 18px; }
+  .h-info { color: var(--ink2); line-height: 1.5; }
+  .h-date { font-family: var(--mono); font-size: 11px; color: var(--ink3); text-align: right; }
+  .h-bp { font-family: var(--mono); font-weight: 500; color: var(--ink); }
+  .no-history { text-align: center; color: var(--ink3); font-size: 14px; padding: 24px 0; }
+
+  .person-tab.father.active { color: var(--father); }
+  .person-tab.mother.active { color: var(--mother); }
+
+  /* show/hide weight */
+  .weight-section { display: none; }
+  .weight-section.visible { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark"><span class="logo-dot"></span> 家庭健康記錄</div>
+  <h1>每日量測記錄</h1>
+  <div class="date-today" id="dateDisplay"></div>
+</header>
+
+
+
+<!-- 選人 -->
+<div class="person-tabs">
+  <div class="person-tab father active" onclick="selectPerson('father')">
+    <div class="person-icon">👴</div>
+    <div class="person-name">父親</div>
+    <div class="person-sub">血壓＋體重</div>
+  </div>
+  <div class="person-tab mother" onclick="selectPerson('mother')">
+    <div class="person-icon">👵</div>
+    <div class="person-name">母親</div>
+    <div class="person-sub">血壓</div>
+  </div>
+</div>
+
+<!-- 日期 -->
+<div class="card date-field">
+  <div class="card-title">量測日期</div>
+  <div class="field">
+    <input type="date" id="dateInput">
+  </div>
+</div>
+
+<!-- 血壓 -->
+<div class="card">
+  <div class="card-title">血壓量測</div>
+  <div class="bp-row">
+    <div class="field">
+      <label><span class="field-dot" style="background:#C84B2F"></span>收縮壓（上壓）</label>
+      <input type="number" id="systolic" placeholder="120" min="60" max="220" inputmode="numeric" oninput="checkBP()">
+      <div class="field-unit">mmHg</div>
+    </div>
+    <div class="bp-sep">/</div>
+    <div class="field">
+      <label><span class="field-dot" style="background:#4B7FA8"></span>舒張壓（下壓）</label>
+      <input type="number" id="diastolic" placeholder="80" min="40" max="140" inputmode="numeric" oninput="checkBP()">
+      <div class="field-unit">mmHg</div>
+    </div>
+  </div>
+  <div class="bp-status" id="bpStatus"></div>
+</div>
+
+<!-- 心率 + 體重 -->
+<div class="card">
+  <div class="card-title">其他數據</div>
+  <div class="field-row">
+    <div class="field">
+      <label>心率（選填）</label>
+      <input type="number" id="heartRate" placeholder="75" min="40" max="200" inputmode="numeric">
+      <div class="field-unit">bpm</div>
+    </div>
+    <div class="field weight-section" id="weightSection">
+      <label>體重（選填）</label>
+      <input type="number" id="weight" placeholder="65.0" step="0.1" inputmode="decimal">
+      <div class="field-unit">公斤</div>
+    </div>
+  </div>
+</div>
+
+<!-- 備註 -->
+<div class="card">
+  <div class="card-title">備註（選填）</div>
+  <textarea id="note" placeholder="例如：今天有吃藥、活動量較少、感覺頭暈..."></textarea>
+</div>
+
+<button class="submit-btn" onclick="submitRecord()">✓ 儲存記錄</button>
+
+<!-- 歷史記錄 -->
+<div class="history-section">
+  <div class="history-title">
+    近期記錄
+    <button class="clear-btn" onclick="clearHistory()">清除全部</button>
+  </div>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<!-- 成功頁 -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-icon">✅</div>
+  <div class="success-title">記錄成功！</div>
+  <div class="success-sub" id="successSub"></div>
+  <div class="success-data" id="successData"></div>
+  <button class="again-btn" onclick="resetForm()">繼續填寫</button>
+</div>
+
+<!-- Google Sheets 說明 -->
+<div class="card" style="margin-top:32px; border-style: dashed;">
+  <div class="card-title" style="color:#C84B2F">🔗 串接 Google 試算表（設定一次，永久同步）</div>
+  <div style="font-size:13px; color: #5C5650; line-height:2;">
+    <strong>步驟一：</strong>建立 Google 試算表，第一列標題設為：<br>
+    <code style="background:#F4F1EC; padding:2px 6px; border-radius:4px; font-size:12px;">時間戳記 | 對象 | 日期 | 收縮壓 | 舒張壓 | 心率 | 體重 | 備註</code><br><br>
+    <strong>步驟二：</strong>在試算表中點「擴充功能」→「Apps Script」，貼上以下程式碼並部署為「網頁應用程式」（執行身分：我、存取：所有人）：<br>
+    <pre style="background:#F4F1EC; border-radius:8px; padding:12px; font-size:11px; overflow-x:auto; margin-top:8px; line-height:1.8;">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet()
+               .getActiveSheet();
+  var d = JSON.parse(e.postData.contents);
+  sheet.appendRow([
+    new Date(), d.person, d.date,
+    d.systolic, d.diastolic,
+    d.heartRate, d.weight, d.note
+  ]);
+  return ContentService
+    .createTextOutput(JSON.stringify({ok:true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+    <strong>步驟三：</strong>將部署後得到的網址，貼入本頁面原始碼中 <code style="background:#F4F1EC; padding:2px 6px; border-radius:4px; font-size:12px;">SHEETS_URL</code> 的位置即可。<br><br>
+    需要協助設定？可以把問題傳給我，我來幫你一步一步完成。
+  </div>
+</div>
+
+<script>
+// ---- 設定區 ----
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxXAPCEIJS_E_GrekIg0Bj13s3CFnTGU_2ILRDSR8EJ4IZtqfmrBLqOzX5Iq7VJ_XqtbQ/exec';
+
+// ---- 初始化 ----
+let currentPerson = 'father';
+
+function init() {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth()+1).padStart(2,'0');
+  const d = String(today.getDate()).padStart(2,'0');
+  document.getElementById('dateInput').value = `${y}-${m}-${d}`;
+  document.getElementById('dateDisplay').textContent =
+    today.toLocaleDateString('zh-TW', {year:'numeric', month:'long', day:'numeric', weekday:'long'});
+  renderHistory();
+}
+
+function selectPerson(p) {
+  currentPerson = p;
+  document.querySelectorAll('.person-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.person-tab.' + p).classList.add('active');
+  document.getElementById('weightSection').classList.toggle('visible', p === 'father');
+}
+
+// ---- 血壓判斷 ----
+function checkBP() {
+  const s = parseInt(document.getElementById('systolic').value);
+  const d = parseInt(document.getElementById('diastolic').value);
+  const el = document.getElementById('bpStatus');
+  if (!s || !d) { el.className = 'bp-status'; return; }
+
+  let cls, icon, text;
+  if (s < 120 && d < 80) {
+    cls = 'normal'; icon = '✓'; text = '正常範圍（< 120/80）';
+  } else if (s < 130 && d < 80) {
+    cls = 'elevated'; icon = '↑'; text = '血壓偏高（收縮壓 120–129）';
+  } else if (s < 140 || d < 90) {
+    cls = 'elevated'; icon = '⚠'; text = '第一期高血壓（130–139 / 80–89）';
+  } else {
+    cls = 'high'; icon = '⚠'; text = '第二期高血壓（≥ 140/90）建議就醫確認';
+  }
+  el.className = `bp-status ${cls} visible`;
+  el.innerHTML = `<span>${icon}</span><span>${text}</span>`;
+}
+
+// ---- 送出 ----
+async function submitRecord() {
+  const s = document.getElementById('systolic').value;
+  const d = document.getElementById('diastolic').value;
+  if (!s || !d) { alert('請填寫收縮壓與舒張壓'); return; }
+
+  const record = {
+    person: currentPerson === 'father' ? '父親' : '母親',
+    date: document.getElementById('dateInput').value,
+    systolic: s,
+    diastolic: d,
+    heartRate: document.getElementById('heartRate').value || '',
+    weight: currentPerson === 'father' ? (document.getElementById('weight').value || '') : '',
+    note: document.getElementById('note').value || '',
+    ts: Date.now()
+  };
+
+  // 本機儲存
+  const history = JSON.parse(localStorage.getItem('healthRecords') || '[]');
+  history.unshift(record);
+  localStorage.setItem('healthRecords', JSON.stringify(history.slice(0, 60)));
+
+  // Google Sheets 同步（若有設定）
+  if (SHEETS_URL) {
+    try {
+      await fetch(SHEETS_URL, {
+        method: 'POST',
+        body: JSON.stringify(record),
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    } catch(e) {}
+  }
+
+  showSuccess(record);
+}
+
+function showSuccess(r) {
+  const personLabel = r.person;
+  const dateLabel = r.date.replace(/-/g, '/');
+  let dataHtml = `<div><strong>${personLabel}</strong> · ${dateLabel}</div>`;
+  dataHtml += `<div>血壓 <strong>${r.systolic}/${r.diastolic}</strong> mmHg</div>`;
+  if (r.heartRate) dataHtml += `<div>心率 <strong>${r.heartRate}</strong> bpm</div>`;
+  if (r.weight) dataHtml += `<div>體重 <strong>${r.weight}</strong> kg</div>`;
+  if (r.note) dataHtml += `<div>備註 <strong>${r.note}</strong></div>`;
+
+  document.getElementById('successSub').textContent =
+    `${personLabel}的記錄已儲存${SHEETS_URL ? '，並同步至 Google 試算表' : '在本頁面'}。`;
+  document.getElementById('successData').innerHTML = dataHtml;
+  document.getElementById('successOverlay').classList.add('show');
+}
+
+function resetForm() {
+  document.getElementById('successOverlay').classList.remove('show');
+  document.getElementById('systolic').value = '';
+  document.getElementById('diastolic').value = '';
+  document.getElementById('heartRate').value = '';
+  document.getElementById('weight').value = '';
+  document.getElementById('note').value = '';
+  document.getElementById('bpStatus').className = 'bp-status';
+  renderHistory();
+}
+
+// ---- 歷史記錄 ----
+function renderHistory() {
+  const history = JSON.parse(localStorage.getItem('healthRecords') || '[]');
+  const list = document.getElementById('historyList');
+  if (!history.length) {
+    list.innerHTML = '<div class="no-history">尚無記錄</div>';
+    return;
+  }
+  list.innerHTML = history.slice(0, 10).map(r => {
+    const icon = r.person === '父親' ? '👴' : '👵';
+    const extra = [];
+    if (r.heartRate) extra.push(`心率 ${r.heartRate}`);
+    if (r.weight) extra.push(`體重 ${r.weight} kg`);
+    return `<div class="history-item">
+      <div class="h-person">${icon}</div>
+      <div class="h-info">
+        <div class="h-bp">${r.systolic}/${r.diastolic} mmHg</div>
+        <div>${extra.join('・') || r.person}</div>
+      </div>
+      <div class="h-date">${r.date.replace(/-/g,'/')}</div>
+    </div>`;
+  }).join('');
+}
+
+function clearHistory() {
+  if (!confirm('確定要清除所有本機記錄？')) return;
+  localStorage.removeItem('healthRecords');
+  renderHistory();
+}
+
+// ---- 啟動 ----
+selectPerson('father');
+init();
+</script>
+</body>
+</html>
